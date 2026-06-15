@@ -1,0 +1,10 @@
+{
+  "name": "portfolio",
+  "private": true,
+  "scripts": {
+    "dev:cms": "cd cms && npm run develop",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "echo 'Run cms and frontend in separate terminals: npm run dev:cms & npm run dev:frontend'",
+    "build": "cd cms && npm run build && cd ../frontend && npm run build"
+  }
+}

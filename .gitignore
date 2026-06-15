@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets (never commit)
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+!.env.example
+!.env.production.example
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+
+# Strapi
+cms/.tmp/
+cms/dist/
+cms/build/
+cms/.cache/
+cms/.strapi/
+cms/.strapi-updater.json
+cms/.strapi-cloud.json
+cms/public/uploads/*
+!cms/public/uploads/.gitkeep
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+.eslintcache
+
+# IDE
+.idea/
+.vscode/
+*.swp

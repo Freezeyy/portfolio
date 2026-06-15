@@ -1,0 +1,16 @@
+# Cloudflare Tunnel config
+# 1. Copy to your Pi: ~/.cloudflared/config.yml
+# 2. Replace tunnel ID, credentials path, and hostname
+#
+# Create tunnel:  cloudflared tunnel create portfolio-cms
+# Route DNS:      cloudflared tunnel route dns portfolio-cms cms.yourdomain.com
+# Run service:    sudo cloudflared service install
+#                 sudo systemctl enable --now cloudflared
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /home/pi/.cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  - hostname: cms.yourdomain.com
+    service: http://127.0.0.1:1337
+  - service: http_status:404

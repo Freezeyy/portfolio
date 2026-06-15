@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "skills",
+  "info": {
+    "singularName": "skill",
+    "pluralName": "skills",
+    "displayName": "Skill",
+    "description": "Technical and professional skills"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["language", "frontend", "backend", "database", "devops"],
+      "default": "frontend",
+      "required": true
+    },
+    "proficiency": {
+      "type": "integer",
+      "min": 0,
+      "max": 100,
+      "default": 80
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
