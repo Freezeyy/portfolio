@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { Profile } from '@/types';
@@ -138,10 +139,12 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
               <p className="text-xs text-zinc-500">{profile.headline}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <Sparkles size={14} className="text-accent" />
-            AI Portfolio
-          </div>
+          <Link
+            href="/"
+            className="text-xs text-zinc-500 transition hover:text-white"
+          >
+            ← Back to portfolio
+          </Link>
         </div>
       </header>
 

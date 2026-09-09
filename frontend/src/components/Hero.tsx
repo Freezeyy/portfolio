@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowDown, Download, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDown, Download, Mail, Sparkles } from 'lucide-react';
 import type { Profile } from '@/types';
 import { getMediaUrl } from '@/lib/strapi';
 import { GitHubIcon, LinkedInIcon, WhatsAppIcon } from '@/components/icons/SocialIcons';
@@ -73,6 +74,13 @@ export function Hero({ profile }: { profile: Profile }) {
             >
               Get in touch
             </a>
+            <Link
+              href="/ai"
+              className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-6 py-3 text-sm font-medium text-accent transition hover:border-accent/50 hover:bg-accent/15"
+            >
+              <Sparkles size={16} />
+              Ask my AI twin
+            </Link>
             {resumeUrl && (
               <a
                 href={resumeUrl}
