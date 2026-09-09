@@ -68,6 +68,23 @@ Generate secrets on the Pi:
 ```bash
 for i in 1 2 3 4; do openssl rand -base64 32; echo; done
 ```
+71A2ERiOdLXxoO612IGHnv44gQHuq9ycD5GttiTB5IA=
+
+Yh8FBeb7wwTdZvjETs0QLp/eR4XglB4kF5klXLfvYIc=
+
+qPxSz6z94QRwRX7YzB8W1onMSz/13JrtdfPZJdirtAM=
+
+5XFs35ojqjmxn/2kvstvqeUUxQE4/+zGkOQxmzAfJ1A=
+
+9GMtHKGq/zidApqn4owtYpPV00FBsI85SNXCwxOgQq4=
+
+dl4xXYe2CEoNRjMv7UC3r51kM4YFk1ThIXOkhA0nLPk=
+
+I0dlTjs/CPhYkZHCrnJLGctXdPwQoJ2DoXfSqSr0ToQ=
+
+L3ExQNRbLqZaN4kW3eUY1pzwnPo1qG2QPuzOfeo46qg=
+
+9Ie+G7RPe9Z1WykrILPa/AkQxkkroNIyUxr8q6q0fyE=
 
 Fill in `.env`:
 

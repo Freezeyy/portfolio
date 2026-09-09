@@ -1,12 +1,27 @@
-# Portfolio — Strapi CMS + Next.js
+# Portfolio — AI Interactive + Strapi CMS
 
-A beautiful, CMS-driven personal portfolio. Manage your profile, skills, projects, experience, and education from the Strapi admin panel — no code changes needed.
+An AI-powered portfolio where visitors **ask questions** instead of scrolling. Answers are generated with **RAG** (Retrieval Augmented Generation) over your Strapi CMS content.
 
 ## Stack
 
-- **CMS:** [Strapi 5](https://strapi.io) (SQLite for local dev)
-- **Frontend:** [Next.js 16](https://nextjs.org) + Tailwind CSS + Framer Motion
+- **CMS:** [Strapi 5](https://strapi.io) — you manage content as usual
+- **Frontend:** [Next.js 16](https://nextjs.org) + Tailwind + Framer Motion
+- **AI:** OpenAI (`gpt-4o-mini` + `text-embedding-3-small`) with RAG over Strapi data
 - **Node:** 20+ required (use `.nvmrc`)
+
+## How it works
+
+```
+Visitor asks a question
+    → Next.js /api/chat
+    → Fetch all content from Strapi
+    → Embed question + content chunks
+    → Retrieve top 6 relevant chunks (cosine similarity)
+    → GPT answers using only that context
+    → Stream response to chat UI
+```
+
+The classic scrollable portfolio is still available at `/classic`.
 
 ## Quick start
 
@@ -16,37 +31,42 @@ A beautiful, CMS-driven personal portfolio. Manage your profile, skills, project
 nvm use
 ```
 
-### 2. Start Strapi CMS
+### 2. Environment
+
+**Frontend** (`frontend/.env.local`):
+
+```env
+NEXT_PUBLIC_STRAPI_URL=http://localhost:1337
+OPENAI_API_KEY=sk-your-key-here
+```
+
+### 3. Start Strapi CMS
 
 ```bash
 npm run dev:cms
 ```
 
-On first launch, create an admin account at [http://localhost:1337/admin](http://localhost:1337/admin).
-
-The CMS auto-seeds demo content and enables public API permissions on startup.
-
-### 3. Start the frontend (new terminal)
+### 4. Start the frontend
 
 ```bash
 npm run dev:frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) — chat with the AI portfolio.
 
 ## Managing content
 
-Log into Strapi admin → **Content Manager**:
+Same as before — edit in Strapi admin. The AI automatically picks up changes within ~60 seconds (Strapi cache) and uses fresh content on each chat request.
 
-| Content Type | Description |
+## Deployment
+
+See **[deploy/DEPLOY.md](deploy/DEPLOY.md)** for Netlify + Raspberry Pi setup.
+
+Additional Netlify env var:
+
+| Key | Value |
 |---|---|
-| **Profile** | Single entry: name, headline, bio, avatar, social links |
-| **Skill** | Skills with category & proficiency (0–100) |
-| **Project** | Portfolio projects with tech stack, links, featured flag |
-| **Experience** | Work history with dates and descriptions |
-| **Education** | Degrees and institutions |
-
-Changes publish immediately to the site (60s ISR revalidation).
+| `OPENAI_API_KEY` | Your OpenAI API key (server-side secret) |
 
 ## Project structure
 
