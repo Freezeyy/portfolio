@@ -32,6 +32,20 @@ function getMascotState(messages: ChatMessage[], isLoading: boolean): MascotStat
   return 'thinking';
 }
 
+function ChatAssistantAvatar() {
+  return (
+    <div className="relative mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-accent/25 bg-zinc-900 ring-1 ring-accent/10">
+      <Image
+        src="/mascot/idle.png"
+        alt=""
+        fill
+        className="object-cover object-top"
+        sizes="32px"
+      />
+    </div>
+  );
+}
+
 export function ChatPortfolio({ profile }: { profile: Profile }) {
   const avatarUrl = getMediaUrl(profile.avatar);
   const welcomeMessage = useMemo(
@@ -233,11 +247,7 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
                     transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                   >
-                    {message.role === 'assistant' && (
-                      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/10 text-xs font-bold text-accent">
-                        AI
-                      </div>
-                    )}
+                    {message.role === 'assistant' && <ChatAssistantAvatar />}
 
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
@@ -266,9 +276,7 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-3"
                 >
-                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/10 text-xs font-bold text-accent">
-                    AI
-                  </div>
+                  <ChatAssistantAvatar />
                   <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 shadow-sm">
                     <ChatTypingIndicator />
                   </div>
