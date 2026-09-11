@@ -1,18 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
+import { ArrowUp, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { Profile } from '@/types';
 import { getMediaUrl } from '@/lib/strapi';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
+import { ChatMascot, type MascotState } from '@/components/chat/ChatMascot';
+import { ChatTypingIndicator } from '@/components/chat/ChatTypingIndicator';
+import type { ChatMessage } from '@/lib/chat/types';
+import {
+  createWelcomeMessage,
+  loadChatSession,
+  saveChatSession,
+  toApiHistory,
+} from '@/lib/chat/storage';
 
 const suggestedQuestions = [
   'What projects have you built?',
@@ -21,29 +25,64 @@ const suggestedQuestions = [
   'Are you available for hire?',
 ];
 
+function getMascotState(messages: ChatMessage[], isLoading: boolean): MascotState {
+  if (!isLoading) return 'idle';
+  const last = messages[messages.length - 1];
+  if (last?.role === 'assistant') return 'speaking';
+  return 'thinking';
+}
+
 export function ChatPortfolio({ profile }: { profile: Profile }) {
   const avatarUrl = getMediaUrl(profile.avatar);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Hey! I'm ${profile.name}'s AI assistant. Ask me anything about my skills, projects, experience, or background — no scrolling required.`,
-    },
-  ]);
+  const welcomeMessage = useMemo(
+    () => createWelcomeMessage(profile.name),
+    [profile.name]
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
+  const [hydrated, setHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const mascotState = getMascotState(messages, isLoading);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    const stored = loadChatSession();
+    if (stored?.length) {
+      setMessages([welcomeMessage, ...stored]);
+    }
+    setHydrated(true);
+  }, [welcomeMessage]);
+
+  useEffect(() => {
+    if (!hydrated || isLoading) return;
+    saveChatSession(messages);
+  }, [messages, hydrated, isLoading]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isLoading]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
 
-    const userMessage: Message = {
+    const history = toApiHistory(messages);
+
+    const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content: trimmed,
@@ -59,7 +98,7 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message: trimmed, history }),
       });
 
       if (!response.ok) {
@@ -120,12 +159,19 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      {/* Background atmosphere */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-accent/8 blur-3xl" />
+        <div className="absolute -right-24 bottom-32 h-80 w-80 rounded-full bg-violet-600/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(240,180,41,0.06)_0%,_transparent_55%)]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-white/5 bg-[#050508]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+      <header className="relative z-20 shrink-0 border-b border-white/5 bg-[#050508]/75 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-white/10 bg-zinc-900">
+            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-accent/30 bg-zinc-900 ring-2 ring-accent/10">
               {avatarUrl ? (
                 <Image src={avatarUrl} alt={profile.name} fill className="object-cover" sizes="36px" />
               ) : (
@@ -135,7 +181,13 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-white">{profile.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-white">{profile.name}</p>
+                <span className="inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">
+                  <Sparkles size={10} />
+                  AI Twin
+                </span>
+              </div>
               <p className="text-xs text-zinc-500">{profile.headline}</p>
             </div>
           </div>
@@ -148,100 +200,144 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
-        <div className="space-y-6">
-          <AnimatePresence initial={false}>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    message.role === 'user'
-                      ? 'bg-accent text-[#050508] font-medium'
-                      : 'border border-white/8 bg-white/[0.03] text-zinc-300'
-                  }`}
+      {/* Body — mascot stays fixed, chat scrolls */}
+      <div className="relative z-10 mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 px-6 lg:grid-cols-[16rem_1fr] lg:gap-x-10">
+        {/* Mascot — desktop sidebar (never scrolls) */}
+        <aside className="hidden min-h-0 items-center justify-center py-6 lg:flex">
+          <div className="rounded-3xl border border-white/8 bg-white/[0.02] p-4 backdrop-blur-sm">
+            <ChatMascot state={mascotState} name={profile.name} />
+          </div>
+        </aside>
+
+        {/* Chat column */}
+        <main className="flex min-h-0 flex-col lg:col-start-2">
+          {/* Mascot — mobile (fixed above scroll area) */}
+          <div className="shrink-0 py-3 lg:hidden">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-2 py-1 backdrop-blur-sm">
+              <ChatMascot state={mascotState} name={profile.name} compact />
+            </div>
+          </div>
+
+          {/* Scrollable messages only */}
+          <div
+            ref={scrollRef}
+            className="chat-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-2"
+          >
+            <div className="space-y-5 pb-2">
+              <AnimatePresence initial={false}>
+                {messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    {message.role === 'assistant' && (
+                      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/10 text-xs font-bold text-accent">
+                        AI
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                        message.role === 'user'
+                          ? 'bg-accent text-[#050508] font-medium shadow-accent/20'
+                          : 'border border-white/8 bg-white/[0.04] text-zinc-300 shadow-black/20'
+                      }`}
+                    >
+                      {message.content ? (
+                        message.role === 'assistant' ? (
+                          <ChatMarkdown content={message.content} />
+                        ) : (
+                          message.content
+                        )
+                      ) : (
+                        <ChatTypingIndicator />
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-3"
                 >
-                  {message.content || (
-                    <Loader2 size={16} className="animate-spin text-zinc-500" />
-                  )}
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/10 text-xs font-bold text-accent">
+                    AI
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 shadow-sm">
+                    <ChatTypingIndicator />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {messages.length === 1 && !isLoading && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-6 pb-2"
+              >
+                <p className="mb-3 text-xs uppercase tracking-wider text-zinc-600">
+                  Try asking
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((q, i) => (
+                    <motion.button
+                      key={q}
+                      type="button"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 + i * 0.06 }}
+                      whileHover={{ scale: 1.03, borderColor: 'rgba(240,180,41,0.35)' }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => sendMessage(q)}
+                      className="rounded-full border border-white/8 bg-white/[0.02] px-4 py-2 text-xs text-zinc-400 transition hover:text-white"
+                    >
+                      {q}
+                    </motion.button>
+                  ))}
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                <Loader2 size={16} className="animate-spin text-zinc-500" />
-              </div>
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Suggested questions — show only at start */}
-        {messages.length === 1 && !isLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8"
-          >
-            <p className="mb-3 text-xs uppercase tracking-wider text-zinc-600">
-              Try asking
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => sendMessage(q)}
-                  className="rounded-full border border-white/8 bg-white/[0.02] px-4 py-2 text-xs text-zinc-400 transition hover:border-accent/30 hover:text-white"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
+            )}
+          </div>
+        </main>
       </div>
 
-      {/* Input */}
-      <div className="sticky bottom-0 border-t border-white/5 bg-[#050508]/90 backdrop-blur-xl">
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto flex max-w-3xl items-end gap-3 px-6 py-4"
-        >
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about my work, skills, projects..."
-            rows={1}
-            disabled={isLoading}
-            className="max-h-32 flex-1 resize-none rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-accent/40 focus:outline-none disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            aria-label="Send message"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-[#050508] transition hover:bg-accent/90 disabled:opacity-40"
-          >
-            {isLoading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
+      {/* Input — pinned to bottom */}
+      <div className="relative z-20 shrink-0 border-t border-white/5 bg-[#050508]/90 backdrop-blur-xl">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 px-6 lg:grid-cols-[16rem_1fr] lg:gap-x-10">
+          <div className="hidden lg:block" aria-hidden />
+          <form onSubmit={handleSubmit} className="flex items-end gap-3 py-4">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                isLoading ? 'AI twin is thinking...' : 'Ask about my work, skills, projects...'
+              }
+              rows={1}
+              disabled={isLoading}
+              className="max-h-32 flex-1 resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10 disabled:opacity-50"
+            />
+            <motion.button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              aria-label="Send message"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-[#050508] transition hover:bg-accent/90 disabled:opacity-40"
+            >
               <ArrowUp size={18} />
-            )}
-          </button>
-        </form>
+            </motion.button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -44,8 +44,11 @@ Open [http://localhost:3000](http://localhost:3000).
 Add to `frontend/.env.local`:
 
 ```env
-OPENAI_API_KEY=sk-your-key-here
+GROQ_API_KEY=your-groq-key      # primary chat (https://console.groq.com/keys)
+GEMINI_API_KEY=your-gemini-key  # RAG embeddings + chat fallback (https://aistudio.google.com/apikey)
 ```
+
+Chat tries **Groq first** and silently falls back to **Gemini** when Groq hits its rate limit.
 
 Then visit [http://localhost:3000/ai](http://localhost:3000/ai) or click **Ask my AI twin** on the homepage.
 
