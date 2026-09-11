@@ -25,7 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} scroll-smooth`}>
+    <html
+      lang="en"
+      className={`${syne.variable} ${dmSans.variable} scroll-smooth`}
+      data-scroll-behavior="smooth"
+    >
       <body className="font-body antialiased">{children}</body>
     </html>
   );
