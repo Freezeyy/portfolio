@@ -8,7 +8,8 @@ export type MascotState = 'idle' | 'thinking' | 'speaking';
 interface ChatMascotProps {
   state: MascotState;
   name: string;
-  compact?: boolean;
+  /** sidebar = desktop panel, mobile = slim horizontal strip */
+  variant?: 'sidebar' | 'mobile';
 }
 
 const statusCopy: Record<MascotState, string> = {
@@ -31,16 +32,115 @@ function resolveMascotImage(state: MascotState): string {
   return mascotImages[state];
 }
 
-export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
-  const scale = compact ? 0.72 : 1;
-  const imageSrc = resolveMascotImage(state);
+function SpeakingBars({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex items-end gap-0.5 ${className}`}>
+      {[0, 1, 2, 3].map((i) => (
+        <motion.span
+          key={i}
+          animate={{ height: [4, 10 + i * 2, 4] }}
+          transition={{
+            duration: 0.45,
+            repeat: Infinity,
+            delay: i * 0.08,
+            ease: 'easeInOut',
+          }}
+          className="w-0.5 rounded-full bg-accent/80"
+          style={{ height: 4 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ThinkingDots({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-1 ${className}`}>
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          animate={{ opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
+          className="h-1.5 w-1.5 rounded-full bg-accent"
+        />
+      ))}
+    </div>
+  );
+}
+
+function MobileMascot({
+  state,
+  name,
+  imageSrc,
+}: {
+  state: MascotState;
+  name: string;
+  imageSrc: string;
+}) {
+  const firstName = name.split(' ')[0];
 
   return (
-    <div
-      className={`relative flex flex-col items-center ${compact ? 'py-2' : 'py-4'}`}
-      style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
-    >
-      {/* Ambient glow */}
+    <div className="flex items-center gap-3 px-1 py-1">
+      <motion.div
+        animate={{
+          y: state === 'idle' ? [0, -2, 0] : 0,
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        className="relative h-14 w-12 shrink-0"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={state}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="relative h-full w-full"
+          >
+            <Image
+              src={imageSrc}
+              alt={`${name}'s AI twin`}
+              fill
+              className="object-contain object-bottom drop-shadow-lg"
+              sizes="48px"
+              priority
+            />
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-display text-sm font-semibold text-white">
+          {firstName}&apos;s AI Twin
+        </p>
+        <div className="mt-0.5 flex items-center gap-2">
+          <motion.p
+            key={state}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: state === 'idle' ? 0.65 : 1 }}
+            className="truncate text-xs text-accent"
+          >
+            {statusCopy[state]}
+          </motion.p>
+          {state === 'thinking' && <ThinkingDots />}
+          {state === 'speaking' && <SpeakingBars />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SidebarMascot({
+  state,
+  name,
+  imageSrc,
+}: {
+  state: MascotState;
+  name: string;
+  imageSrc: string;
+}) {
+  return (
+    <div className="relative flex flex-col items-center py-4">
       <motion.div
         animate={{
           opacity: state === 'idle' ? 0.35 : state === 'thinking' ? 0.65 : 0.5,
@@ -54,7 +154,6 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
         className="absolute top-16 h-40 w-40 rounded-full bg-accent/20 blur-3xl"
       />
 
-      {/* Thought bubble */}
       <AnimatePresence>
         {state === 'thinking' && (
           <motion.div
@@ -63,26 +162,12 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
             exit={{ opacity: 0, y: -4, scale: 0.9 }}
             className="absolute -top-2 z-10 rounded-2xl border border-white/10 bg-[#0c0c12] px-4 py-2 shadow-lg shadow-accent/10"
           >
-            <div className="flex items-center gap-1">
-              {[0, 1, 2].map((i) => (
-                <motion.span
-                  key={i}
-                  animate={{ y: [0, -5, 0], opacity: [0.4, 1, 0.4] }}
-                  transition={{
-                    duration: 0.9,
-                    repeat: Infinity,
-                    delay: i * 0.15,
-                  }}
-                  className="inline-block h-2 w-2 rounded-full bg-accent"
-                />
-              ))}
-            </div>
+            <ThinkingDots />
             <div className="absolute -bottom-2 left-6 h-3 w-3 rotate-45 border-b border-r border-white/10 bg-[#0c0c12]" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Character image + motion */}
       <motion.div
         animate={{
           y: state === 'idle' ? [0, -6, 0] : state === 'thinking' ? [0, -3, 0] : [0, -5, 0],
@@ -96,7 +181,6 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
         }}
         className="relative z-[1]"
       >
-        {/* Ground shadow */}
         <div className="absolute -bottom-1 left-1/2 h-3 w-32 -translate-x-1/2 rounded-full bg-black/30 blur-md" />
 
         <div className="relative h-52 w-44">
@@ -121,7 +205,6 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
           </AnimatePresence>
         </div>
 
-        {/* Orbiting sparkles when thinking */}
         <AnimatePresence>
           {state === 'thinking' &&
             [0, 1, 2].map((i) => (
@@ -141,7 +224,6 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
         </AnimatePresence>
       </motion.div>
 
-      {/* Status */}
       <motion.div
         key={state}
         initial={{ opacity: 0, y: 6 }}
@@ -159,32 +241,28 @@ export function ChatMascot({ state, name, compact = false }: ChatMascotProps) {
         </motion.p>
       </motion.div>
 
-      {/* Speaking wave bars */}
       <AnimatePresence>
         {state === 'speaking' && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-3 flex items-end justify-center gap-1"
+            className="mt-3"
           >
-            {[0, 1, 2, 3, 4].map((i) => (
-              <motion.span
-                key={i}
-                animate={{ height: [8, 18 + i * 2, 8] }}
-                transition={{
-                  duration: 0.45,
-                  repeat: Infinity,
-                  delay: i * 0.08,
-                  ease: 'easeInOut',
-                }}
-                className="w-1 rounded-full bg-accent/80"
-                style={{ height: 8 }}
-              />
-            ))}
+            <SpeakingBars className="justify-center gap-1" />
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
+}
+
+export function ChatMascot({ state, name, variant = 'sidebar' }: ChatMascotProps) {
+  const imageSrc = resolveMascotImage(state);
+
+  if (variant === 'mobile') {
+    return <MobileMascot state={state} name={name} imageSrc={imageSrc} />;
+  }
+
+  return <SidebarMascot state={state} name={name} imageSrc={imageSrc} />;
 }

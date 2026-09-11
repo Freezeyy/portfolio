@@ -225,10 +225,10 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
 
         {/* Chat column */}
         <main className="flex min-h-0 flex-col lg:col-start-2">
-          {/* Mascot — mobile (fixed above scroll area) */}
-          <div className="shrink-0 py-3 lg:hidden">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-2 py-1 backdrop-blur-sm">
-              <ChatMascot state={mascotState} name={profile.name} compact />
+          {/* Mascot — mobile slim strip */}
+          <div className="mb-2 shrink-0 lg:hidden">
+            <div className="rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 backdrop-blur-sm">
+              <ChatMascot state={mascotState} name={profile.name} variant="mobile" />
             </div>
           </div>
 
