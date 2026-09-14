@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { DM_Sans, Syne } from 'next/font/google';
+import { AiTwinFab } from '@/components/chat/AiTwinFab';
 import './globals.css';
 
 const syne = Syne({
@@ -30,7 +31,10 @@ export default function RootLayout({
       className={`${syne.variable} ${dmSans.variable} scroll-smooth`}
       data-scroll-behavior="smooth"
     >
-      <body className="font-body antialiased">{children}</body>
+      <body className="font-body antialiased">
+        {children}
+        <AiTwinFab />
+      </body>
     </html>
   );
 }
