@@ -18,17 +18,13 @@ const statusCopy: Record<MascotState, string> = {
   speaking: 'Putting it together...',
 };
 
-const mascotImages = {
+const mascotImages: Record<MascotState, string> = {
   idle: '/mascot/idle.png',
   thinking: '/mascot/thinking.png',
   speaking: '/mascot/speaking.png',
-} as const;
+};
 
-/** Remove this line once speaking.png is added */
-const useSpeakingFallback = true;
-
-function resolveMascotImage(state: MascotState): string {
-  if (useSpeakingFallback && state === 'speaking') return mascotImages.idle;
+export function getMascotImage(state: MascotState): string {
   return mascotImages[state];
 }
 
@@ -258,7 +254,7 @@ function SidebarMascot({
 }
 
 export function ChatMascot({ state, name, variant = 'sidebar' }: ChatMascotProps) {
-  const imageSrc = resolveMascotImage(state);
+  const imageSrc = getMascotImage(state);
 
   if (variant === 'mobile') {
     return <MobileMascot state={state} name={name} imageSrc={imageSrc} />;

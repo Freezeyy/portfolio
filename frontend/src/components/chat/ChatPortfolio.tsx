@@ -8,7 +8,7 @@ import Image from 'next/image';
 import type { Profile } from '@/types';
 import { getMediaUrl } from '@/lib/strapi';
 import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
-import { ChatMascot, type MascotState } from '@/components/chat/ChatMascot';
+import { ChatMascot, getMascotImage, type MascotState } from '@/components/chat/ChatMascot';
 import { ChatTypingIndicator } from '@/components/chat/ChatTypingIndicator';
 import type { ChatMessage } from '@/lib/chat/types';
 import {
@@ -17,6 +17,7 @@ import {
   saveChatSession,
   toApiHistory,
 } from '@/lib/chat/storage';
+import { typewriterReveal } from '@/lib/chat/typewriter-reveal';
 
 const suggestedQuestions = [
   'What projects have you built?',
@@ -25,18 +26,11 @@ const suggestedQuestions = [
   'Are you available for hire?',
 ];
 
-function getMascotState(messages: ChatMessage[], isLoading: boolean): MascotState {
-  if (!isLoading) return 'idle';
-  const last = messages[messages.length - 1];
-  if (last?.role === 'assistant') return 'speaking';
-  return 'thinking';
-}
-
-function ChatAssistantAvatar() {
+function ChatAssistantAvatar({ state }: { state: MascotState }) {
   return (
     <div className="relative mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-accent/25 bg-zinc-900 ring-1 ring-accent/10">
       <Image
-        src="/mascot/idle.png"
+        src={getMascotImage(state)}
         alt=""
         fill
         className="object-cover object-top"
@@ -56,10 +50,9 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
   const [hydrated, setHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mascotState, setMascotState] = useState<MascotState>('idle');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const mascotState = getMascotState(messages, isLoading);
 
   useEffect(() => {
     document.documentElement.style.overflow = 'hidden';
@@ -105,6 +98,7 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setMascotState('thinking');
 
     const assistantId = crypto.randomUUID();
 
@@ -127,35 +121,54 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
         ...prev,
         { id: assistantId, role: 'assistant', content: '' },
       ]);
+      setMascotState('speaking');
 
       const decoder = new TextDecoder();
-      let accumulated = '';
+      let fullText = '';
+      let streamDone = false;
+
+      const updateAssistantContent = (content: string) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content } : m))
+        );
+      };
+
+      const revealPromise = typewriterReveal({
+        readTarget: () => fullText,
+        isStreamDone: () => streamDone,
+        onReveal: updateAssistantContent,
+        msPerWord: 38,
+      });
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        const snapshot = accumulated;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: snapshot } : m
-          )
-        );
+        fullText += decoder.decode(value, { stream: true });
       }
+
+      streamDone = true;
+      await revealPromise;
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: 'assistant',
-          content:
-            error instanceof Error
-              ? error.message
-              : 'Something went wrong. Please try again.',
-        },
-      ]);
+      setMascotState('idle');
+      const errorContent =
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.';
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === assistantId);
+        if (exists) {
+          return prev.map((m) =>
+            m.id === assistantId ? { ...m, content: errorContent } : m
+          );
+        }
+        return [
+          ...prev,
+          { id: assistantId, role: 'assistant' as const, content: errorContent },
+        ];
+      });
     } finally {
       setIsLoading(false);
+      setMascotState('idle');
       inputRef.current?.focus();
     }
   }
@@ -183,33 +196,40 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
 
       {/* Header */}
       <header className="relative z-20 shrink-0 border-b border-white/5 bg-[#050508]/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-accent/30 bg-zinc-900 ring-2 ring-accent/10">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:justify-between sm:px-6 sm:py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-accent/30 bg-zinc-900 ring-2 ring-accent/10 sm:h-9 sm:w-9">
               {avatarUrl ? (
-                <Image src={avatarUrl} alt={profile.name} fill className="object-cover" sizes="36px" />
+                <Image
+                  src={avatarUrl}
+                  alt={profile.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 32px, 36px"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs font-bold text-accent">
                   {profile.name[0]}
                 </div>
               )}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-white">{profile.name}</p>
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent">
+                <p className="truncate text-sm font-medium text-white">{profile.name}</p>
+                <span className="hidden shrink-0 items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent sm:inline-flex">
                   <Sparkles size={10} />
                   AI Twin
                 </span>
               </div>
-              <p className="text-xs text-zinc-500">{profile.headline}</p>
+              <p className="truncate text-xs text-zinc-500">{profile.headline}</p>
             </div>
           </div>
           <Link
             href="/"
-            className="text-xs text-zinc-500 transition hover:text-white"
+            className="shrink-0 whitespace-nowrap text-xs text-zinc-500 transition hover:text-white"
           >
-            ← Back to portfolio
+            <span className="sm:hidden">← Back</span>
+            <span className="hidden sm:inline">← Back to portfolio</span>
           </Link>
         </div>
       </header>
@@ -247,7 +267,16 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
                     transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                   >
-                    {message.role === 'assistant' && <ChatAssistantAvatar />}
+                    {message.role === 'assistant' && (
+                      <ChatAssistantAvatar
+                        state={
+                          message.id === messages[messages.length - 1]?.id &&
+                          mascotState !== 'idle'
+                            ? mascotState
+                            : 'idle'
+                        }
+                      />
+                    )}
 
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
@@ -276,7 +305,7 @@ export function ChatPortfolio({ profile }: { profile: Profile }) {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-3"
                 >
-                  <ChatAssistantAvatar />
+                  <ChatAssistantAvatar state={mascotState} />
                   <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 shadow-sm">
                     <ChatTypingIndicator />
                   </div>
