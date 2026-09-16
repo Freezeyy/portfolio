@@ -99,7 +99,7 @@ export function Footer({ name }: { name: string }) {
     <footer className="border-t border-white/5 px-6 py-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-zinc-500 sm:flex-row">
         <p>
-          © {new Date().getFullYear()} {name}. Crafted with Strapi + Next.js.
+          © {new Date().getFullYear()} {name}. All rights reserved.
         </p>
         <a href="#" className="transition hover:text-white">
           Back to top
