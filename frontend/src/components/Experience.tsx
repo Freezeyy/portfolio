@@ -43,55 +43,43 @@ export function ExperienceSection({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ duration: 0.5, delay: index * 0.08 }}
-                  className={`relative grid gap-6 md:grid-cols-2 md:gap-12 ${
-                    isEven ? '' : 'md:[&>div:first-child]:order-2'
-                  }`}
+                  className={`relative ${isEven ? 'md:pr-[calc(50%+1.5rem)] md:text-right' : 'md:pl-[calc(50%+1.5rem)]'}`}
                 >
-                  <div className={`${isEven ? 'md:text-right' : ''}`}>
-                    <div
-                      className={`inline-flex items-center gap-3 ${
-                        isEven ? 'md:flex-row-reverse' : ''
-                      }`}
-                    >
-                      <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent/30 bg-[#050508]">
-                        {logoUrl ? (
-                          <Image
-                            src={logoUrl}
-                            alt={experience.company}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <span className="font-display text-xs font-bold text-accent">
-                            {experience.company[0]}
-                          </span>
-                        )}
-                      </div>
-                      <div className={isEven ? 'md:text-right' : ''}>
-                        <p className="font-mono text-xs text-accent">
-                          {formatDateRange(
-                            experience.startDate,
-                            experience.endDate
-                          )}
-                        </p>
-                        <h3 className="font-display text-xl font-semibold text-white">
-                          {experience.role}
-                        </h3>
-                        <p className="text-sm text-zinc-400">
-                          {experience.company}
-                          {experience.location ? ` · ${experience.location}` : ''}
-                        </p>
-                      </div>
+                  <div
+                    className={`inline-flex items-center gap-3 ${
+                      isEven ? 'md:flex-row-reverse' : ''
+                    }`}
+                  >
+                    <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent/30 bg-[#050508]">
+                      {logoUrl ? (
+                        <Image
+                          src={logoUrl}
+                          alt={experience.company}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <span className="font-display text-xs font-bold text-accent">
+                          {experience.company[0]}
+                        </span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6">
-                    {experience.description && (
-                      <p className="text-sm leading-relaxed text-zinc-400">
-                        {experience.description}
+                    <div className={isEven ? 'md:text-right' : ''}>
+                      <p className="font-mono text-xs text-accent">
+                        {formatDateRange(
+                          experience.startDate,
+                          experience.endDate
+                        )}
                       </p>
-                    )}
+                      <h3 className="font-display text-xl font-semibold text-white">
+                        {experience.role}
+                      </h3>
+                      <p className="text-sm text-zinc-400">
+                        {experience.company}
+                        {experience.location ? ` · ${experience.location}` : ''}
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               );
